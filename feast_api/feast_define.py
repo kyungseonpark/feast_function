@@ -1,7 +1,10 @@
 import pandas as pd
+
+from jinja2 import Template
 from typing import Optional
 from feast_templete import *
 from feast_global import *
+
 
 def define_feast_yaml(
         project: str,
@@ -35,50 +38,56 @@ def define_feast_yaml(
     return res
 
 
-def define_entity(
-        val_name: str,
-        entity_name: str,
-        entity_dtype: str):
-    return f'en_{val_name} = Entity(\n' \
-           f'    name="{entity_name}",\n' \
-           f'    value_type={_mapping_feast_type(entity_dtype, is_entity=True)}\n' \
-           f')\n\n'
+def __render_j2_template(template_name: str, **kwargs):
+    template = Template(template_name)
+    rendered_template = template.render(**kwargs).lstrip()
+    return rendered_template
 
 
-def _mapping_feast_type(input_type, is_entity: Optional[bool] = False):
+def __mapping_feast_type(input_type, is_entity: Optional[bool] = False):
     type_mapping = ENTITY_DTYPE if is_entity else FEATURE_VIEW_DTYPE
     return FEAST_DTYPE[input_type][type_mapping]
 
 
-def define_file_source(
-        val_name: str,
-        base_parquet_path: str,
-        timestamp_col: str):
-    return f'fs_{val_name} = FileSource(\n' \
-           f'    path="{base_parquet_path}",\n' \
-           f'    timestamp_field="{timestamp_col}"\n' \
-           f')\n\n'
+def __make_features_list(dataset_features: dict):
+    """Make list of Features."""
+    res_list = list()
+    for key, item in dataset_features.items():
+        res_list.append(f'\n        Field(name="{key}", dtype={__mapping_feast_type(item)})')
+    return ','.join(res_list)
+
+
+def define_entity(val_name: str, entity_name: str, entity_dtype: str):
+    return __render_j2_template(
+        template_name=DEFINE_ENTITY_TEMPLATE,
+        val_name=val_name,
+        entity_name=entity_name,
+        entity_type=__mapping_feast_type(entity_dtype, is_entity=True)
+    )
+
+
+def define_file_source(val_name: str, base_parquet_path: str, timestamp_col: str):
+    return __render_j2_template(
+        template_name=DEFINE_FILE_SOURCE_TEMPLATE,
+        val_name=val_name,
+        base_parquet_path=base_parquet_path,
+        timestamp_col=timestamp_col
+    )
 
 
 def define_push_source(val_name):
-    return f'# feast push source for streaming data\n' \
-           f'ps_{val_name} = PushSource(\n' \
-           f'   name="ps_{val_name}",\n' \
-           f'   batch_source=fs_{val_name},\n' \
-           f')\n\n'
+    return __render_j2_template(
+        template_name=DEFINE_PUSH_SOURCE_TEMPLATE,
+        val_name=val_name,
+    )
 
 
-def define_feature_view(
-        val_name: str,
-        dataset_features: dict):
-    res = f'fv_{val_name} = FeatureView(\n' \
-          f'    name="fv_{val_name}",\n' \
-          f'    source=fs_{val_name},\n' \
-          f'    entities=[en_{val_name}],\n' \
-          f'    schema=[{_make_features_list(dataset_features)}],\n' \
-          f'    ttl=timedelta(seconds=(86400 * 30)),\n'
-    res += f')\n\n'
-    return res
+def define_feature_view(val_name: str, dataset_features: dict):
+    return __render_j2_template(
+        template_name=DEFINE_FEATURE_VIEW_TEMPLATE,
+        val_name=val_name,
+        feature_list=__make_features_list(dataset_features),
+    )
 
 
 def define_kafka_source(
@@ -90,19 +99,70 @@ def define_kafka_source(
     for k, v in dataset_features.items():
         schema_json.append(f'{k} {FEAST_DTYPE[v][KAFKA_DTYPE]}')
     schema_json.append(f'{timestamp_col} {FEAST_DTYPE["UNIX_TIMESTAMP"][KAFKA_DTYPE]}')
-    res = f'kas_{val_name} = KafkaSource(\n' \
-          f'    name="kas_{val_name}",\n' \
-          f'    kafka_bootstrap_servers="kafka1:19091,kafka2:19092,kafka3:19093",\n' \
-          f'    topic="topic-{val_name.replace("_", "-")}",\n' \
-          f'    timestamp_field="{timestamp_col}",\n' \
-          f'    batch_source=fs_{val_name},\n' \
-          f'    message_format=JsonFormat(\n' \
-          f'        schema_json="{", ".join(schema_json)}",\n' \
-          f'    ),\n' \
-          f'    watermark_delay_threshold=timedelta(minutes=5),\n' \
-          f')\n\n'
 
-    return res
+    return __render_j2_template(
+        template_name=DEFINE_KAFKA_SOURCE_TEMPLATE,
+        val_name=val_name,
+        timestamp_col=timestamp_col,
+        schema_json=schema_json,
+    )
+
+
+def define_feast_push_server(repo_path: str):
+    return __render_j2_template(
+        template_name=DEFINE_FEAST_PUSH_SERVER,
+        repo_path=repo_path
+    )
+
+
+def define_feast_push_server_cli(
+        pj_name: str,
+        host_ip: str,
+        server_port,
+        repo_path: str):
+    return [
+            'uvicorn', f'{pj_name}_server:app',
+            '--host', f'{host_ip}',
+            '--port', f'{server_port}',
+            '--app-dir', f'{repo_path}'
+        ]
+
+
+def get_features_import_libs(ws_name: str):
+    return __render_j2_template(
+        template_name=FEATURES_IMPORT_LIBS,
+        ws_name=ws_name
+    )
+
+
+def get_sources_import_libs():
+    return __render_j2_template(
+        template_name=SOURCES_IMPORT_LIBS
+    )
+
+
+def get_entities_import_libs():
+    return __render_j2_template(
+        template_name=ENTITIES_IMPORT_LIBS
+    )
+
+
+def get_feast_dtype():
+    return FEAST_DTYPE
+
+
+def convert_dtpye_dict(dtpye_dict: dict, dtype_option: str):
+    converted_dtpye_dict = dict()
+    for k, v in dtpye_dict.items():
+        converted_dtpye_dict[k] = FEAST_DTYPE[v][dtype_option]
+    return converted_dtpye_dict
+
+
+def spark_preprocess_fn(rows: pd.DataFrame):
+    print(f"df columns: {rows.columns}")
+    print(f"df size: {rows.size}")
+    print(f"df size: {rows.head}")
+    return rows
 
 
 # def define_stream_feature_view(
@@ -177,68 +237,3 @@ def define_kafka_source(
 #     derived_val += f'\n    )\n\n'
 #
 #     return sfv_res + stream_func + derived_val
-
-
-def _make_features_list(dataset_features: dict):
-    """Make list of Features."""
-    res_list = list()
-    for key, item in dataset_features.items():
-        res_list.append(f'\n        Field(name="{key}", dtype={_mapping_feast_type(item)})')
-    return ','.join(res_list)
-
-
-def define_feast_push_server(repo_path: str):
-    res = FEAST_PUSH_SERVER_IMPORT_LIBS
-    res += f'fs = FeatureStore(repo_path="{repo_path}")\n'
-    res += 'app = get_app(fs)\n\n'
-    for _, val in PUSH_SERVER_APIS.items():
-        res += val
-    return res
-
-
-def define_feast_push_server_cli(
-        pj_name: str,
-        host_ip: str,
-        server_port,
-        repo_path: str):
-    return [
-            'uvicorn', f'{pj_name}_server:app',
-            '--host', f'{host_ip}',
-            '--port', f'{server_port}',
-            '--app-dir', f'{repo_path}'
-        ]
-
-
-def get_features_import_libs(ws_name: str):
-    res = FEATURES_IMPORT_LIBS
-    res += f'from {ws_name}_entities import *\n' \
-           f'from {ws_name}_sources import *\n\n'
-    return res
-
-
-def get_sources_import_libs():
-    res = SOURCES_IMPORT_LIBS
-    return res
-
-
-def get_entities_import_libs():
-    res = ENTITIES_IMPORT_LIBS
-    return res
-
-
-def get_feast_dtype():
-    return FEAST_DTYPE
-
-
-def convert_dtpye_dict(dtpye_dict: dict, dtype_option: str):
-    converted_dtpye_dict = dict()
-    for k, v in dtpye_dict.items():
-        converted_dtpye_dict[k] = FEAST_DTYPE[v][dtype_option]
-    return converted_dtpye_dict
-
-
-def spark_preprocess_fn(rows: pd.DataFrame):
-    print(f"df columns: {rows.columns}")
-    print(f"df size: {rows.size}")
-    print(f"df size: {rows.head}")
-    return rows

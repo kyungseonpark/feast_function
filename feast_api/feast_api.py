@@ -13,8 +13,8 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 
-from feast_function import FeastRepo, FeastDataset, FeastServe
-from feast_function import FeastRepoItem, FeastDatasetItem, FeastServeItem
+from feast_api_io import *
+from feast_class import *
 from feast_function import feast_push_server_boot, exception_handler, check_api_body
 from feast_global import *
 
@@ -45,21 +45,20 @@ async def validation_exception_handler(request, exc):
 
 @exception_handler
 @feast.post("/init/", tags=[TAGS[0]])
-async def post_feast_init(api_body: FeastRepoItem):
+async def post_feast_init(api_body: FeastInitInput):
     """
     **POST**, init the project feast-repo.
     Recommend when the first dataset is saved in the abacus-project.\n\n
     :param api_body:
     {
         "workspace_id": 1,
-        "project_id": 1,
     }
     :return:
     {
         "repo_path": "/feast_repo/1_workspace/1_project"
     }
     """
-    fr = FeastRepo(api_body)
+    fr = FeastRepo(api_body.dict())
     return {"repo_path": fr.feast_init()}
 
 

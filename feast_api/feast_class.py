@@ -1,3 +1,5 @@
+import os
+
 import oyaml
 import glob
 
@@ -8,40 +10,78 @@ class FeastPath:
     def __init__(self, workspace_id: int):
         self.ws_name = f'workspace_{workspace_id}'
         self.ws_feast_path = f'{FEAST_REPO}/{self.ws_name}'
+        os.makedirs(self.ws_feast_path, exist_ok=True)
 
 
 class FeastDirectoryPath(FeastPath):
     def __init__(self, workspace_id: int):
         super().__init__(workspace_id)
         self.parquet_path = f'{self.ws_feast_path}/parquet'
+        os.makedirs(self.parquet_path, exist_ok=True)
+
         self.feature_view_path = f'{self.ws_feast_path}/fv'
+        os.makedirs(self.feature_view_path, exist_ok=True)
+
         self.source_path = f'{self.ws_feast_path}/sources'
+        os.makedirs(self.source_path, exist_ok=True)
+
         self.entity_path = f'{self.ws_feast_path}/entities'
+        os.makedirs(self.ws_feast_path, exist_ok=True)
+
+        self.repo_fv_file = f'{self.feature_view_path}/{self.ws_name}_features.py'
+        self.repo_sources_file = f'{self.source_path}/{self.ws_name}_sources.py'
+        self.repo_entities_file = f'{self.entity_path}/{self.ws_name}_entities.py'
+
 
 class FeastFilePath(FeastDirectoryPath):
-    def __init__(self, workspace_id: int):
+    def __init__(self, workspace_id: int, project_id: int, dataset_id: int):
         super().__init__(workspace_id)
+        self.pj_name = f'project_{project_id}'
+        self.repo_parquet_file = f'{self.parquet_path}/{self.pj_name}_file_store.parquet'
+        self.repo_fv_file = f'{self.feature_view_path}/{self.ws_name}_features.py'
+        self.repo_sources_file = f'{self.source_path}/{self.ws_name}_sources.py'
+        self.repo_entities_file = f'{self.entity_path}/{self.ws_name}_entities.py'
 
 
-class FeastRepo:
+class FeastRepo(FeastDirectoryPath):
     """Class for controlling the Feast Repository."""
     def __init__(self, workspace_id):
-        self._feast_path = FeastPath(workspace_id)
-
-        self._ws_name = f'workspace_{workspace_id}'
-        # self._pj_name = f'project_{project_id}'
-        self._ws_feast_path = f'{FEAST_REPO}/{self._ws_name}'
         # workspace 당 1개씩 생성.
-        self._repo_path = FeastDirectoryPath(feast_repo_path=self._ws_feast_path)
+        super().__init__(workspace_id)
 
     def feast_init(self):
-        os.makedirs(self._ws_feast_path, exist_ok=True)
-        for _, path in self._repo_path.__dict__.items():
-            os.makedirs(path, exist_ok=True)
-        with open(self._ws_feast_path + "/__init__.py", "w", encoding="utf-8"):
+        with open(self.ws_feast_path + "/__init__.py", "w", encoding="utf-8"):
             pass
-        with open(self._ws_feast_path + "/feature_store.yaml", "w", encoding="utf-8") as f:
+        with open(self.ws_feast_path + "/feature_store.yaml", "w", encoding="utf-8") as f:
             oyaml.dump(self.__feast_yaml(), f)
+        return self.ws_feast_path
+
+    def feast_apply(self):
+        """Define Feature View and feast apply."""
+        for key, path in self._repo_path.items():
+            # 각 속성들 저장해놓은 txt 파일 경로 호출.
+            file_list = glob.glob(path+'/*.txt')
+            # 속성별 Feature Store의 경로와 속성별 호출해야할 라이브러리 가져오기
+            if key == FEATURE_VIEW:
+                file_path = self._repo_fv_file
+                import_libs = get_features_import_libs(self._ws_name)
+            elif key == FILE_SOURCE:
+                file_path = self._repo_sources_file
+                import_libs = get_sources_import_libs()
+            elif key == ENTITY:
+                file_path = self._repo_entities_file
+                import_libs = get_entities_import_libs()
+            else:
+                continue
+
+            # 속성 내용들 저장.
+            with open(file_path, 'w') as fs_file:
+                fs_file.write(import_libs)
+                for file_name in sorted(file_list):
+                    with open(file_name, 'r') as f:
+                        fs_file.write(f.read())
+        # Feast apply
+        os.system(f'feast -c {self._ws_feast_path} apply')
         return self._ws_feast_path
 
     def feast_pj_delete(self):
@@ -52,8 +92,8 @@ class FeastRepo:
     def __feast_yaml(self):
         """Make feast setting dict for feast yaml."""
         return define_feast_yaml(
-            project=self._ws_name,
-            registry=f'{self._ws_name}.db',
+            project=self.ws_name,
+            registry=f'{self.ws_name}.db',
             provider='local',
             offline_type=FILE_TYPE,
             online_type=REDIS_TYPE
@@ -62,20 +102,21 @@ class FeastRepo:
 
 class FeastDataset(FeastRepo):
     """Class for modifying Feast Dataset."""
-    def __init__(self, item: FeastDatasetItem):
-        super().__init__(item)
-        self._dataset_id = item.dataset_id
-        self._ds_name = f'dataset_{item.dataset_id}'
+    def __init__(self, workspace_id, project_id, dataset_id, dataset):
+        super().__init__(workspace_id)
+        self._dataset_id = dataset_id
+        self._pj_name = f'project_{project_id}'
+        self._ds_name = f'dataset_{dataset_id}'
 
-        self._dataset_features = item.dataset_features
-        self._entity_name = item.entity_name
-        self._entity_dtype = item.entity_dtype
-        self._timestamp_col = item.timestamp_column
+        # self._dataset_features = item.dataset_features
+        # self._entity_name = item.entity_name
+        # self._entity_dtype = item.entity_dtype
+        # self._timestamp_col = item.timestamp_column
 
-        self._repo_parquet_file = f'{self._repo_path[PARQUET_FILE]}/{self._pj_name}_file_store.parquet'
-        self._repo_fv_file = f'{self._ws_feast_path}/{self._ws_name}_features.py'
-        self._repo_sources_file = f'{self._ws_feast_path}/{self._ws_name}_sources.py'
-        self._repo_entities_file = f'{self._ws_feast_path}/{self._ws_name}_entities.py'
+        self._repo_parquet_file = f'{self.parquet_path}/{self._pj_name}_file_store.parquet'
+        self._repo_fv_file = f'{self.feature_view_path}/{self._ws_name}_features.py'
+        self._repo_sources_file = f'{self.source_path}/{self._ws_name}_sources.py'
+        self._repo_entities_file = f'{self.entity_path}/{self._ws_name}_entities.py'
 
         self._base_file_path = {
             PARQUET_FILE: f'{self._repo_path[PARQUET_FILE]}/{self._pj_name}/{self._ds_name}.parquet',
