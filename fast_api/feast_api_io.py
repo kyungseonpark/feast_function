@@ -1,6 +1,7 @@
-from typing import Optional, BinaryIO
-from fastapi import FastAPI, File, UploadFile, Body
+from typing import BinaryIO
+from fastapi import Body, UploadFile
 from pydantic import BaseModel
+
 
 class FeastInitInput(BaseModel):
     """
@@ -10,6 +11,7 @@ class FeastInitInput(BaseModel):
     """
     workspace_id: int = Body(ge=1, example=1)
 
+
 class FeastInitOutput(BaseModel):
     """
     API Body output values after initializing Feast per workspace.
@@ -17,6 +19,7 @@ class FeastInitOutput(BaseModel):
     repo_path: Feast's repository path
     """
     repo_path: str
+
 
 class TransferDatasetInput(FeastInitInput):
     """
@@ -26,17 +29,24 @@ class TransferDatasetInput(FeastInitInput):
     dataset_id: ID of dataset used by ABACUS Studio.
     dataset: incoming dataset. format is csv or parquet.
     """
-    dataset_id: int = Body(ge=1, example=1)
+    workspace_id: int = Body(ge=1, example=1)
     project_id: int = Body(ge=1, example=1)
-    dataset: BinaryIO
+    dataset_id: int = Body(ge=1, example=1)
+    dataset: UploadFile
+    dataset_features: dict
+    timestamp_col: str
+    entity_name: str
+    entity_dtype: str
+
 
 class TransferDatasetOutPut(BaseModel):
     """
     Input a dataset into Feast and see the API body output.
 
-    dataset_path:
+    repo_path: Feast's repository path
     """
-    dataset_path: str
+    repo_path: str
+
 
 class FeastApplyInput(FeastInitInput):
     """
@@ -59,7 +69,9 @@ class DeleteDatasetInput(FeastInitInput):
     Input required to delete a dataset.
     ### Inherits from FeastInitInput. Because it depends on Workspace.
     """
-    dataset_id: int
+    workspace_id: int = Body(ge=1, example=1)
+    project_id: int = Body(ge=1, example=1)
+    dataset_id: int = Body(ge=1, example=1)
 
 class DeleteDatasetOutPut(BaseModel):
     """
@@ -71,6 +83,8 @@ class FeastServeInput(FeastInitInput):
     """
     Input required for the "Feast Serve" action.
     """
+    workspace_id: int = Body(ge=1, example=1)
+    project_id: int = Body(ge=1, example=1)
     bootstrap_servers: list[str]
 
 class FeastServeOutput(BaseModel):

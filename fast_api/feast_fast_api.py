@@ -1,22 +1,18 @@
-import glob
-import pickle
-import subprocess
-
 import pandas
 
+from fast_funciton import *
 
+from feast_api import *
+from feast_api_io import FeastInitInput, FeastInitOutput
+from feast_api_io import TransferDatasetInput, TransferDatasetOutPut
+from feast_api_io import FeastApplyInput, FeastApplyOutput
+from feast_api_io import DeleteDatasetInput, DeleteDatasetOutPut
+from feast_api_io import FeastServeInput, FeastServeOutput
+from feast_api_io import StopServingInput, StopServingOutput
 
 from fastapi import FastAPI
-from fastapi import HTTPException
-from fastapi import UploadFile, File, Form
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 
-from feast_api_io import *
-from feast_class import *
-from feast_function import feast_push_server_boot, exception_handler, check_api_body
-from feast_global import *
 
 feast = FastAPI(
     title="Feast",
@@ -49,78 +45,62 @@ async def post_feast_init(api_body: FeastInitInput):
     """
     **POST**, init the project feast-repo.
     Recommend when the first dataset is saved in the abacus-project.\n\n
-    :param api_body:
-    {
-        "workspace_id": 1,
-    }
-    :return:
-    {
-        "repo_path": "/feast_repo/1_workspace/1_project"
-    }
+
+    - **workspace_id**: ID of the workspace used by ABACUS
     """
-    fr = FeastRepo(api_body.dict())
-    return {"repo_path": fr.feast_init()}
+    return FeastInitOutput(repo_path=feast_init(api_body.workspace_id))
+
+
+# @exception_handler
+# @feast.post("/transfer_dataset/", tags=[TAGS[1]])
+# async def post_transfer_dataset(api_body: TransferDatasetInput):
+#     file = api_body.dataset
+#     content
+#     return TransferDatasetOutPut()
+
+# @exception_handler
+# @feast.post("/transfer_dataset/", tags=[TAGS[1]])
+# async def post_transfer_dataset(
+#         workspace_id: int = Form(...),
+#         project_id: int = Form(...),
+#         dataset_id: int = Form(...),
+#         dataset: UploadFile = File(...)):
+#     """
+#     **POST**, API for transferring the dataset directly to the feast-repo,
+#     preparing for use in the cloud repository.\n\n
+#     """
+#     dataset_file = await dataset.read()
+#     fdi = FeastDatasetItem(workspace_id=workspace_id, project_id=project_id, dataset_id=dataset_id)
+#     fdm = FeastDataset(fdi)
+#
+#     # 전송된 데이터셋 기본 저장.
+#     dataset_path = fdm.get_base_parquet_path()
+#     with open(dataset_path, 'wb') as f:
+#         f.write(dataset_file)
+#     df = pandas.read_parquet(dataset_path)
+#     df[DATASET_COLUMN] = dataset_id
+#     df.to_parquet(dataset_path, index=False)
+#     await dataset.close()
+#     fdm.save_parquet_file()
+#     return {"msg": f'Complete to save dataset.:{dataset_path}'}
 
 
 @exception_handler
-@feast.post("/transfer_dataset/", tags=[TAGS[1]])
-async def post_transfer_dataset(
-        workspace_id: int = Form(...),
-        project_id: int = Form(...),
-        dataset_id: int = Form(...),
-        dataset: UploadFile = File(...)):
-    """
-    **POST**, API for transferring the dataset directly to the feast-repo,
-    preparing for use in the cloud repository.\n\n
-    """
-    dataset_file = await dataset.read()
-    fdi = FeastDatasetItem(workspace_id=workspace_id, project_id=project_id, dataset_id=dataset_id)
-    fdm = FeastDataset(fdi)
-
-    # 전송된 데이터셋 기본 저장.
-    dataset_path = fdm.get_base_parquet_path()
-    with open(dataset_path, 'wb') as f:
-        f.write(dataset_file)
-    df = pandas.read_parquet(dataset_path)
-    df[DATASET_COLUMN] = dataset_id
-    df.to_parquet(dataset_path, index=False)
-    await dataset.close()
-    fdm.save_parquet_file()
-    return {"msg": f'Complete to save dataset.:{dataset_path}'}
-
-
-@exception_handler
-@feast.post("/apply/", tags=[TAGS[1]])
-async def post_feast_save_and_apply(api_body: FeastDatasetItem):
+@feast.post("/transfer_and_apply/", tags=[TAGS[1]])
+async def post_feast_save_and_apply(api_body: TransferDatasetInput):
     """
     **POST**, API that apply feature-view after sending dataset.\n\n
-    :param api_body:
-    {
-        "workspace_id": 1,
-        "project_id": 1,
-        "dataset_id": 1,
-        "dataset_features": dict(),
-        "entity_name": "entity_name",
-        "entity_dtype": "FEAST_DTYPE"
-        "timestamp_column": "timestamp_column_name"
-    }
-    :return:
-    {
-        "base_setting_file_path": "/feast_repo/1_workspace/1_project/data/1_dataset_feast.txt"
-        "repo_path": "/feast_repo/1_workspace/1_project"
     }
     """
-    fdm = FeastDataset(api_body)
-    fdm.write_base_file()
-    repo_path = fdm.feast_apply()
-    return {
-        "repo_path": repo_path
-    }
+    await feast_save_parquet_file(**api_body.dict())
+    await feast_write_base_file(**api_body.dict())
+    repo_path = await feast_apply(**api_body.dict())
+    return TransferDatasetOutPut(repo_path=repo_path)
 
 
 @exception_handler
-@feast.delete("/dataset_delete/", tags=[TAGS[1]])
-async def del_feast_dataset(api_body: FeastDatasetItem):
+@feast.delete("/delete_dataset/", tags=[TAGS[1]])
+async def delete_feast_dataset(api_body: DeleteDatasetInput):
     """
     **DELETE**, API for deleting Dataset from feast-repo(parquet, FeatureView).\n\n
     :param api_body:
@@ -135,16 +115,12 @@ async def del_feast_dataset(api_body: FeastDatasetItem):
         "base_setting_file_path": "/feast_repo/1_workspace/1_project/data/1_dataset_feast.txt"
     }
     """
-    fd = FeastDataset(api_body)
-    del_res = fd.del_feast_dataset()
-    return {
-        "remove_file_list": del_res
-    }
+    await feast_delete_dataset(**api_body.dict())
 
 
 @exception_handler
-@feast.post("/serve/", tags=[TAGS[2]])
-def post_feast_serve(api_body: FeastServeItem):
+@feast.post("/serve/kafka/", tags=[TAGS[2]])
+def post_feast_serve_by_kafka(api_body: FeastServeInput):
     """
     **POST**, API that drives the push-server of the project.\n\n
     :param api_body:
@@ -158,14 +134,7 @@ def post_feast_serve(api_body: FeastServeItem):
         "server_address": "host_ip:server_port"
     }
     """
-    check_api_body(
-        api_body=api_body.dict(),
-        need_body=[
-            'workspace_id',
-            'project_id',
-        ])
-    fsv = FeastServe(api_body)
-    return {"container_name": fsv.serve()}
+    feast_serve_kafka_consumer(**api_body.dict())
 
 
 @exception_handler

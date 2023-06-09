@@ -1,35 +1,8 @@
-import glob
-import json
-import pickle
-import pandas
-import oyaml
-import docker
-import pandas as pd
-import subprocess
 from functools import wraps
 from fastapi import HTTPException
 from fastapi import status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
-
-from pydantic import BaseModel
-from typing import Optional, Union, List, Dict
-
-from feast import FeatureStore
-from feast.data_source import PushMode
-from feast_define import *
-
-
-def feast_push_server_boot():
-    """
-    After the Feast-server is shut down in any action, push-server is automatically executed.
-    장애가 발생하거나 강제종료되어 feast-server가 종료된 후, 다시 재가동 하면 push-server도 자동으로 실행되기 위한 함수.
-    """
-    server_list = glob.glob('/feast_repo/**/*server.pkl', recursive=True)
-    for server in server_list:
-        with open(server, 'rb') as f:
-            res = pickle.load(f)
-            subprocess.Popen(res)
 
 def exception_handler(func):
     """
@@ -60,6 +33,7 @@ def exception_handler(func):
                 })
             )
     return execute_func
+
 
 def check_api_body(api_body: dict, need_body: list):
     """

@@ -1,9 +1,27 @@
 import pandas as pd
-
-from jinja2 import Template
 from typing import Optional
-from feast_templete import *
-from feast_global import *
+
+from __constant.feast_global import *
+
+
+def __mapping_feast_type(input_type: str, form: str):
+    if input_type not in list(FEAST_DTYPE.keys()):
+        # TBD: error msg
+        pass
+    if form not in list(list(FEAST_DTYPE.values())[0].keys()):
+        # TBD: error msg
+        pass
+
+    return FEAST_DTYPE[input_type][form]
+
+
+def __make_kafka_feature_list(timestamp_col: str, dataset_features: dict):
+    schema_json = list()
+    for k, v in dataset_features.items():
+        schema_json.append(f'{k} {FEAST_DTYPE[v][KAFKA_DTYPE]}')
+        schema_json.append(f'{k} {__mapping_feast_type(v, KAFKA_DTYPE)}')
+    schema_json.append(f'{timestamp_col} {__mapping_feast_type("UNIX_TIMESTAMP", KAFKA_DTYPE)}')
+    return schema_json
 
 
 def define_feast_yaml(
@@ -11,7 +29,7 @@ def define_feast_yaml(
         registry: str,
         provider: str,
         offline_type: str,
-        online_type: str
+        online_type: Optional[str]
 ) -> dict:
     res = dict()
     res['project'] = project
@@ -38,83 +56,6 @@ def define_feast_yaml(
     return res
 
 
-def __render_j2_template(template_name: str, **kwargs):
-    template = Template(template_name)
-    rendered_template = template.render(**kwargs).lstrip()
-    return rendered_template
-
-
-def __mapping_feast_type(input_type, is_entity: Optional[bool] = False):
-    type_mapping = ENTITY_DTYPE if is_entity else FEATURE_VIEW_DTYPE
-    return FEAST_DTYPE[input_type][type_mapping]
-
-
-def __make_features_list(dataset_features: dict):
-    """Make list of Features."""
-    res_list = list()
-    for key, item in dataset_features.items():
-        res_list.append(f'\n        Field(name="{key}", dtype={__mapping_feast_type(item)})')
-    return ','.join(res_list)
-
-
-def define_entity(val_name: str, entity_name: str, entity_dtype: str):
-    return __render_j2_template(
-        template_name=DEFINE_ENTITY_TEMPLATE,
-        val_name=val_name,
-        entity_name=entity_name,
-        entity_type=__mapping_feast_type(entity_dtype, is_entity=True)
-    )
-
-
-def define_file_source(val_name: str, base_parquet_path: str, timestamp_col: str):
-    return __render_j2_template(
-        template_name=DEFINE_FILE_SOURCE_TEMPLATE,
-        val_name=val_name,
-        base_parquet_path=base_parquet_path,
-        timestamp_col=timestamp_col
-    )
-
-
-def define_push_source(val_name):
-    return __render_j2_template(
-        template_name=DEFINE_PUSH_SOURCE_TEMPLATE,
-        val_name=val_name,
-    )
-
-
-def define_feature_view(val_name: str, dataset_features: dict):
-    return __render_j2_template(
-        template_name=DEFINE_FEATURE_VIEW_TEMPLATE,
-        val_name=val_name,
-        feature_list=__make_features_list(dataset_features),
-    )
-
-
-def define_kafka_source(
-        val_name: str,
-        timestamp_col: str,
-        dataset_features: dict,
-):
-    schema_json = list()
-    for k, v in dataset_features.items():
-        schema_json.append(f'{k} {FEAST_DTYPE[v][KAFKA_DTYPE]}')
-    schema_json.append(f'{timestamp_col} {FEAST_DTYPE["UNIX_TIMESTAMP"][KAFKA_DTYPE]}')
-
-    return __render_j2_template(
-        template_name=DEFINE_KAFKA_SOURCE_TEMPLATE,
-        val_name=val_name,
-        timestamp_col=timestamp_col,
-        schema_json=schema_json,
-    )
-
-
-def define_feast_push_server(repo_path: str):
-    return __render_j2_template(
-        template_name=DEFINE_FEAST_PUSH_SERVER,
-        repo_path=repo_path
-    )
-
-
 def define_feast_push_server_cli(
         pj_name: str,
         host_ip: str,
@@ -128,34 +69,19 @@ def define_feast_push_server_cli(
         ]
 
 
-def get_features_import_libs(ws_name: str):
-    return __render_j2_template(
-        template_name=FEATURES_IMPORT_LIBS,
-        ws_name=ws_name
-    )
+def make_features_list(dataset_features: dict):
+    """Make list of Features."""
+    res_list = list()
+    for key, item in dataset_features.items():
+        res_list.append(f'\n        Field(name="{key}", dtype={__mapping_feast_type(item)})')
+    return ','.join(res_list)
 
 
-def get_sources_import_libs():
-    return __render_j2_template(
-        template_name=SOURCES_IMPORT_LIBS
-    )
-
-
-def get_entities_import_libs():
-    return __render_j2_template(
-        template_name=ENTITIES_IMPORT_LIBS
-    )
-
-
-def get_feast_dtype():
-    return FEAST_DTYPE
-
-
-def convert_dtpye_dict(dtpye_dict: dict, dtype_option: str):
-    converted_dtpye_dict = dict()
-    for k, v in dtpye_dict.items():
-        converted_dtpye_dict[k] = FEAST_DTYPE[v][dtype_option]
-    return converted_dtpye_dict
+# def convert_dtpye_dict(dtpye_dict: dict, dtype_option: str):
+#     converted_dtpye_dict = dict()
+#     for k, v in dtpye_dict.items():
+#         converted_dtpye_dict[k] = __mapping_feast_type(v, dtype_option)
+#     return converted_dtpye_dict
 
 
 def spark_preprocess_fn(rows: pd.DataFrame):

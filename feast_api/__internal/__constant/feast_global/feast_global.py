@@ -7,8 +7,9 @@ import os
 
 # Feast Repo 절대 주소.
 FEAST_REPO = os.getenv('FEAST_HOME', '/feast_repo')
+FEAST_URL = os.getenv('FEAST_URL')
 
-# Feast에서는 사용되는 곳마다 Dtpye형식이 다르게 선언되기 때문에 FEAST_DTYPE 딕셔너리를 통해 매핑.
+# Feast에서는 사용되는 곳마다 Dtype형식이 다르게 선언되기 때문에 FEAST_DTYPE 딕셔너리를 통해 매핑.
 FEATURE_VIEW_DTYPE = 'FeatureView'
 ENTITY_DTYPE = 'Entity'
 KAFKA_DTYPE = 'Kafka'
@@ -69,9 +70,10 @@ FILE_TYPE = 'file'
 REDIS_TYPE = 'redis'
 
 # Feast Contents
+WS_FEAST = 'feast'
 PARQUET_FILE = 'parquet'
 ENTITY = 'entity'
-FILE_SOURCE = 'file_source'
+FILE_SOURCE = 'source'
 FEATURE_VIEW = 'feature_view'
 
 STREAM_PARQUET = 'stream_parquet'
