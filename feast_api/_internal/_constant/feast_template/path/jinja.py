@@ -1,5 +1,5 @@
 from .feast_path_template import *
-from feast_api.__internal.__constant.feast_template import render_j2_template
+from feast_api._internal._constant.feast_template import render_j2_template
 
 
 def get_ws_name(workspace_id: int):

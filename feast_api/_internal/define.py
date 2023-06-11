@@ -1,7 +1,7 @@
 import pandas as pd
 from typing import Optional
 
-from __constant.feast_global import *
+from _constant.feast_global import *
 
 
 def __mapping_feast_type(input_type: str, form: str):

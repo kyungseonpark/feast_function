@@ -8,9 +8,9 @@ import subprocess
 from fastapi import UploadFile
 
 from define import define_feast_yaml, make_features_list, __mapping_feast_type
-from __constant.feast_global import *
-from __constant.feast_template.path import *
-from __constant.feast_template.define import *
+from _constant.feast_global import *
+from _constant.feast_template.path import *
+from _constant.feast_template.define import *
 
 def __write_file_contents(file_path: str, contents: str):
     with open(file_path, "w", encoding="utf-8") as f:

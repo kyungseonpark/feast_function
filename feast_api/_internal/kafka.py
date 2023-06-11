@@ -1,6 +1,6 @@
 import docker
-from __constant.feast_global import FEAST_URL
-from __constant.feast_template.kafka import *
+from _constant.feast_global import FEAST_URL
+from _constant.feast_template.kafka import *
 
 async def serve_kafka_consumer(workspace_id: int, project_id: int, kafka_bootstrap_servers: list[str]):
     client = docker.from_env()

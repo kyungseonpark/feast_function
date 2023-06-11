@@ -1,5 +1,6 @@
 from fastapi import UploadFile
-from __internal import *
+from _internal import *
+
 
 async def feast_init(workspace_id: int) -> str:
     """

@@ -2,6 +2,11 @@ from typing import BinaryIO
 from fastapi import Body, UploadFile
 from pydantic import BaseModel
 
+WorkspaceID = Body(ge=1, example=1, description="ID of workspace used by ABACUS Studio.")
+ProjectID = Body(ge=1, example=1, description="ID of project used by ABACUS Studio.")
+DatasetID = Body(ge=1, example=1, description="ID of dataset used by ABACUS Studio.")
+RepoPath = Body(description="Feast's repository path")
+
 
 class FeastInitInput(BaseModel):
     """
@@ -9,7 +14,7 @@ class FeastInitInput(BaseModel):
 
     workspace_id: ID of workspace used by ABACUS Studio.
     """
-    workspace_id: int = Body(ge=1, example=1)
+    workspace_id: int = WorkspaceID
 
 
 class FeastInitOutput(BaseModel):
@@ -18,7 +23,7 @@ class FeastInitOutput(BaseModel):
 
     repo_path: Feast's repository path
     """
-    repo_path: str
+    repo_path: str = RepoPath
 
 
 class TransferDatasetInput(FeastInitInput):
@@ -29,9 +34,9 @@ class TransferDatasetInput(FeastInitInput):
     dataset_id: ID of dataset used by ABACUS Studio.
     dataset: incoming dataset. format is csv or parquet.
     """
-    workspace_id: int = Body(ge=1, example=1)
-    project_id: int = Body(ge=1, example=1)
-    dataset_id: int = Body(ge=1, example=1)
+    workspace_id: int = WorkspaceID
+    project_id: int = ProjectID
+    dataset_id: int = DatasetID
     dataset: UploadFile
     dataset_features: dict
     timestamp_col: str
@@ -45,7 +50,7 @@ class TransferDatasetOutPut(BaseModel):
 
     repo_path: Feast's repository path
     """
-    repo_path: str
+    repo_path: str = RepoPath
 
 
 class FeastApplyInput(FeastInitInput):
@@ -53,7 +58,7 @@ class FeastApplyInput(FeastInitInput):
     API inputs required Feast Apply.
     ### Inherits from FeastInitInput. Because it depends on Workspace.
     """
-    dataset_id: int
+    dataset_id: int = DatasetID
     dataset_features: dict
     entity_name: str
 
@@ -69,9 +74,9 @@ class DeleteDatasetInput(FeastInitInput):
     Input required to delete a dataset.
     ### Inherits from FeastInitInput. Because it depends on Workspace.
     """
-    workspace_id: int = Body(ge=1, example=1)
-    project_id: int = Body(ge=1, example=1)
-    dataset_id: int = Body(ge=1, example=1)
+    workspace_id: int = WorkspaceID
+    project_id: int = ProjectID
+    dataset_id: int = DatasetID
 
 class DeleteDatasetOutPut(BaseModel):
     """
@@ -83,8 +88,8 @@ class FeastServeInput(FeastInitInput):
     """
     Input required for the "Feast Serve" action.
     """
-    workspace_id: int = Body(ge=1, example=1)
-    project_id: int = Body(ge=1, example=1)
+    workspace_id: int = WorkspaceID
+    project_id: int = ProjectID
     bootstrap_servers: list[str]
 
 class FeastServeOutput(BaseModel):

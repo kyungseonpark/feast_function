@@ -1,10 +1,10 @@
 import os
 import glob
 
-from __constant.feast_global import *
-from __constant.feast_template.path import get_ws_feast_path, get_pj_name
-from __constant.feast_template.path import get_ws_feast_parquet_dir, get_ws_feast_fv_dir
-from __constant.feast_template.path import get_ws_feast_source_dir, get_ws_feast_entity_dir
+from _constant.feast_global import *
+from _constant.feast_template.path import get_ws_feast_path, get_pj_name
+from _constant.feast_template.path import get_ws_feast_parquet_dir, get_ws_feast_fv_dir
+from _constant.feast_template.path import get_ws_feast_source_dir, get_ws_feast_entity_dir
 
 
 def __mkdir(path: str):

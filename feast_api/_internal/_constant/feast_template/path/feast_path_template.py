@@ -2,7 +2,7 @@
 TBD
 """
 
-from feast_api.__internal.__constant.feast_global import FEAST_REPO
+from feast_api._internal._constant.feast_global import FEAST_REPO
 
 WS_NAME = 'workspace_{{ workspace_id }}'
 PJ_NAME = 'project_{{ project_id }}'
