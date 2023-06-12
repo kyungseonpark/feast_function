@@ -1,4 +1,3 @@
-from typing import BinaryIO
 from fastapi import Body, UploadFile
 from pydantic import BaseModel
 
@@ -26,19 +25,26 @@ class FeastInitOutput(BaseModel):
     repo_path: str = RepoPath
 
 
-class TransferDatasetInput(FeastInitInput):
+class TransferDatasetInput(BaseModel):
     """
     API Body input values for Input Dataset into Feast.
     ### Inherits from FeastInitInput. Because it depends on Workspace.
 
+    workspace_id: ID of workspace used by ABACUS Studio.
+    dataset_id: ID of dataset used by ABACUS Studio.
+    project_id: ID of project used by ABACUS Studio.
     dataset_id: ID of dataset used by ABACUS Studio.
     dataset: incoming dataset. format is csv or parquet.
+    dataset_features:
+    timestamp_col:
+    entity_name:
+    entity_dtype:
     """
     workspace_id: int = WorkspaceID
     project_id: int = ProjectID
     dataset_id: int = DatasetID
     dataset: UploadFile
-    dataset_features: dict
+    dataset_features: dict[str, str]
     timestamp_col: str
     entity_name: str
     entity_dtype: str
@@ -53,59 +59,84 @@ class TransferDatasetOutPut(BaseModel):
     repo_path: str = RepoPath
 
 
-class FeastApplyInput(FeastInitInput):
-    """
-    API inputs required Feast Apply.
-    ### Inherits from FeastInitInput. Because it depends on Workspace.
-    """
-    dataset_id: int = DatasetID
-    dataset_features: dict
-    entity_name: str
-
-class FeastApplyOutput(FeastInitOutput):
-    """
-    Feast Apply, and the output value.
-    ### Inherits from FeastInitOutput.
-    """
-    pass
-
-class DeleteDatasetInput(FeastInitInput):
+class DeleteDatasetInput(BaseModel):
     """
     Input required to delete a dataset.
     ### Inherits from FeastInitInput. Because it depends on Workspace.
+
+    dataset_id: ID of dataset used by ABACUS Studio.
+    project_id: ID of project used by ABACUS Studio.
+    dataset_id: ID of dataset used by ABACUS Studio.
     """
     workspace_id: int = WorkspaceID
     project_id: int = ProjectID
     dataset_id: int = DatasetID
 
+
 class DeleteDatasetOutPut(BaseModel):
     """
     Output after deleting a dataset.
+
+    removed_file_list:
     """
     removed_file_list: list[str]
 
-class FeastServeInput(FeastInitInput):
+
+class FeastServeInput(BaseModel):
     """
     Input required for the "Feast Serve" action.
+
+    workspace_id: ID of workspace used by ABACUS Studio.
+    project_id: ID of project used by ABACUS Studio.
+    bootstrap_servers:
     """
     workspace_id: int = WorkspaceID
     project_id: int = ProjectID
     bootstrap_servers: list[str]
 
+
 class FeastServeOutput(BaseModel):
     """
     Output after Serve Feast push server.
+
+    container_name:
     """
     container_name: str
 
-class StopServingInput(FeastInitInput):
+
+class StopServingInput(BaseModel):
     """
     Input required to stop serving.
-    """
-    pass
 
-class StopServingOutput(FeastServeOutput):
+    project_id: ID of project used by ABACUS Studio.
+    """
+    project_id: int = ProjectID
+
+
+class StopServingOutput(BaseModel):
     """
     Output after Stop serving.
+
+    container_name:
     """
-    pass
+    container_name: str
+
+
+class FeastPushDataInput(BaseModel):
+    """
+
+    workspace_id: ID of workspace used by ABACUS Studio.
+    project_id: ID of project used by ABACUS Studio.
+    input_data:
+    """
+    workspace_id: int = WorkspaceID
+    project_id: int = ProjectID
+    input_data: dict[str, list]
+
+
+class FeastPushDataOutput(BaseModel):
+    """
+
+    msg:
+    """
+    msg: str

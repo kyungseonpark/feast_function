@@ -37,3 +37,7 @@ def get_sources_import_libs():
 
 def get_entities_import_libs():
     return render_j2_template(template_name=ENTITIES_IMPORT_LIBS)
+
+
+def get_feature_view_define_name():
+    return render_j2_template(template_name=FEATURE_VIEW_DEFINE_NAME)

@@ -10,9 +10,16 @@ from feast_api._internal._constant.feast_template.path.feast_path_template impor
     PJ_PARQUET_PATH
 )
 
+ENTITY_DEFINE_NAME = f'en_{PJ_NAME}'
+FEATURE_VIEW_DEFINE_NAME = f'fv_{PJ_NAME}'
+
+FILE_SOURCE_DEFINE_NAME = f'fs_{PJ_NAME}'
+PUSH_SOURCE_DEFINE_NAME = f'ps_{PJ_NAME}'
+KAFKA_SOURCE_DEFINE_NAME = f'kas_{PJ_NAME}'
+
 
 DEFINE_ENTITY_TEMPLATE = f'''
-en_{PJ_NAME} = Entity(
+{ENTITY_DEFINE_NAME} = Entity(
     name="{{{{ entity_name }}}}",
     value_type={{{{ entity_type }}}},
 )
@@ -22,7 +29,7 @@ en_{PJ_NAME} = Entity(
 
 # need. workspace_id, project_id, timestamp_col
 DEFINE_FILE_SOURCE_TEMPLATE = f'''
-fs_{PJ_NAME} = FileSource(
+{FILE_SOURCE_DEFINE_NAME} = FileSource(
     path="{PJ_PARQUET_PATH}",
     timestamp_field="{{{{ timestamp_col }}}},"
 )
@@ -32,19 +39,19 @@ fs_{PJ_NAME} = FileSource(
 
 DEFINE_PUSH_SOURCE_TEMPLATE = f'''
 # feast push source for streaming data.
-ps_{PJ_NAME} = PushSource(
-    name="ps_{PJ_NAME}",
-    batch_source=fs_{PJ_NAME},
+{PUSH_SOURCE_DEFINE_NAME} = PushSource(
+    name="{PUSH_SOURCE_DEFINE_NAME}",
+    batch_source={FILE_SOURCE_DEFINE_NAME},
 )
 
 '''
 
 
 DEFINE_FEATURE_VIEW_TEMPLATE = f'''
-fv_{PJ_NAME} = FeatureView(
-    name="fv_{PJ_NAME}",
-    source=fs_{PJ_NAME},
-    entities=[en_{PJ_NAME}],
+{FEATURE_VIEW_DEFINE_NAME} = FeatureView(
+    name="{FEATURE_VIEW_DEFINE_NAME}",
+    source={FILE_SOURCE_DEFINE_NAME},
+    entities=[{ENTITY_DEFINE_NAME}],
     schema=[{{{{ feature_list }}}}],
     ttl=timedelta(seconds=86400 * 30),
 )
@@ -53,12 +60,12 @@ fv_{PJ_NAME} = FeatureView(
 
 
 DEFINE_KAFKA_SOURCE_TEMPLATE = f'''
-kas_{PJ_NAME} = KafkaSource(
-    name="kas_{PJ_NAME}",
+{KAFKA_SOURCE_DEFINE_NAME} = KafkaSource(
+    name="{KAFKA_SOURCE_DEFINE_NAME}",
     kafka_bootstrap_servers="kafka1:19091,kafka2:19092,kafka3:19093",
     topic="topic-{PJ_NAME.replace("_", "-", 1)}",
     timestamp_field="{{{{ timestamp_col }}}}",
-    batch_source=fs_{PJ_NAME},
+    batch_source={FILE_SOURCE_DEFINE_NAME},
     message_format=JsonFormat(
         schema_json="{{{{ schema_json }}}}",
     ),

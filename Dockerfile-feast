@@ -1,0 +1,13 @@
+# Base Image
+FROM openjdk:8u332-slim-bullseye
+COPY --from=python:3.8 / /
+
+# pip install requirements
+RUN pip install --upgrade pip
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install -r /tmp/requirements.txt
+
+# COPY app
+COPY ./feast_api /app
+
+CMD uvicorn feast_fast_api:feast --host 0.0.0.0 --port 22124 --app-dir /app

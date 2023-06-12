@@ -1,0 +1,27 @@
+version: "2.4"
+services:
+  feast_local:
+#    image: harbor.aizen.dev/abacus/feast:latest
+    build:
+      context: ./
+      dockerfile: Dockerfile-feast
+    ports:
+      - "${FEAST_PORT}:22124"
+    environment:
+      TZ: ${TZ}
+      FEAST_HOME: /feast_repo
+      FEAST_URL: "http://192.168.0.92:${FEAST_PORT}"
+    volumes:
+      - ./app:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${SAVED_DIR}/feast_repo:/feast_repo
+    restart: always
+    tty: true
+    user: root
+    networks:
+      - default
+      - abacus_network
+networks:
+  abacus_network:
+    driver: bridge
+    internal: true

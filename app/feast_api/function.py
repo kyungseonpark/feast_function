@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi import UploadFile
 from _internal import *
 
@@ -15,22 +17,11 @@ async def feast_init(workspace_id: int) -> str:
     return ws_name
 
 
-async def feast_save_parquet_file(workspace_id: int, project_id: int, dataset_id: int, parquet_file: UploadFile):
-    """
-    Save the dataset and insert data into the Feature Store to make the dataset operational.
-
-        :param workspace_id: ID of the workspace used by ABACUS
-        :param project_id: ID of the project used by ABACUS
-        :param dataset_id: ID of the dataset used by ABACUS
-        :param parquet_file: Parquet file must be entered directly.
-
-        :return: None
-    """
-    await save_parquet_file(workspace_id, project_id, dataset_id, parquet_file)
-
-async def feast_write_base_file(
+async def feast_save_parquet_file(
         workspace_id: int,
         project_id: int,
+        dataset_id: int,
+        parquet_file: UploadFile,
         dataset_features: dict,
         timestamp_col: str,
         entity_name: str,
@@ -47,7 +38,11 @@ async def feast_write_base_file(
         :param entity_dtype:
         :return:
     """
-    write_base_file(workspace_id, project_id, dataset_features, timestamp_col, entity_name, entity_dtype)
+    save_parquet_tasks = [
+        save_parquet_file(workspace_id, project_id, dataset_id, parquet_file),
+        write_base_file(workspace_id, project_id, dataset_features, timestamp_col, entity_name, entity_dtype)
+    ]
+    await asyncio.gather(*save_parquet_tasks)
 
 
 async def feast_apply(workspace_id: int):
@@ -67,7 +62,6 @@ async def feast_delete_project(project_id: int):
 
 async def feast_delete_dataset(workspace_id: int, project_id: int, dataset_id: int):
     await delete_dataset(workspace_id, project_id, dataset_id)
-    await perform_apply(workspace_id)
 
 
 async def feast_push_server_boot():
@@ -84,3 +78,6 @@ async def feast_serve_kafka_consumer(workspace_id: int, project_id: int, kafka_b
 
 async def feast_shutdown_kafka_consumer(project_id: int):
     await shutdown_kafka_consumer(project_id)
+
+async def feast_push_data(workspace_id: int, project_id: int, input_data: dict[str, list]):
+    await push_data(workspace_id, project_id, input_data)
