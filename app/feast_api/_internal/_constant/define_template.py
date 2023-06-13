@@ -3,7 +3,7 @@
 Feast에서 Hard-Coding으로 구성되어야 하는 부분들을 모아 놓았습니다.
 """
 
-from feast_api._internal._constant.feast_template.path.feast_path_template import (
+from .path_template import (
     WS_NAME,
     PJ_NAME,
     WS_FEAST_PATH,

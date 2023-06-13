@@ -1,5 +1,5 @@
-from .feast_kafka_template import *
-from feast_api._internal._constant.feast_template import render_j2_template
+from .kafka_template import *
+from .jinja import render_j2_template
 
 
 def get_response_kafka_topic(project_id: int):

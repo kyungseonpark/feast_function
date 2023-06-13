@@ -1,7 +1,8 @@
 import pandas as pd
 from typing import Optional
 
-from _constant.feast_global import *
+from ._constant.global_variable import FEAST_DTYPE, KAFKA_DTYPE, FEATURE_VIEW_DTYPE
+from ._constant.global_variable import AWS_TYPE, GCP_TYPE, FILE_TYPE
 
 
 def __mapping_feast_type(input_type: str, form: str):
@@ -44,6 +45,8 @@ def define_feast_yaml(
     elif offline_type == FILE_TYPE:
         res['offline_store']['type'] = FILE_TYPE
 
+    print(res)
+
     # res['online_store'] = dict()
     # if online_type == AWS_TYPE:
     #     pass
@@ -73,7 +76,7 @@ def make_features_list(dataset_features: dict):
     """Make list of Features."""
     res_list = list()
     for key, item in dataset_features.items():
-        res_list.append(f'\n        Field(name="{key}", dtype={__mapping_feast_type(item)})')
+        res_list.append(f'\n        Field(name="{key}", dtype={__mapping_feast_type(item, FEATURE_VIEW_DTYPE)})')
     return ','.join(res_list)
 
 

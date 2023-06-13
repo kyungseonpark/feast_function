@@ -1,10 +1,10 @@
-from fastapi import Body, UploadFile
+from fastapi import Body, UploadFile, Path
 from pydantic import BaseModel
 
 WorkspaceID = Body(ge=1, example=1, description="ID of workspace used by ABACUS Studio.")
 ProjectID = Body(ge=1, example=1, description="ID of project used by ABACUS Studio.")
 DatasetID = Body(ge=1, example=1, description="ID of dataset used by ABACUS Studio.")
-RepoPath = Body(description="Feast's repository path")
+RepoPath = Path(description="Feast's repository path")
 
 
 class FeastInitInput(BaseModel):
@@ -22,7 +22,7 @@ class FeastInitOutput(BaseModel):
 
     repo_path: Feast's repository path
     """
-    repo_path: str = RepoPath
+    repo_path: str
 
 
 class TransferDatasetInput(BaseModel):
@@ -31,7 +31,6 @@ class TransferDatasetInput(BaseModel):
     ### Inherits from FeastInitInput. Because it depends on Workspace.
 
     workspace_id: ID of workspace used by ABACUS Studio.
-    dataset_id: ID of dataset used by ABACUS Studio.
     project_id: ID of project used by ABACUS Studio.
     dataset_id: ID of dataset used by ABACUS Studio.
     dataset: incoming dataset. format is csv or parquet.

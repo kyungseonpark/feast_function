@@ -1,7 +1,7 @@
 import asyncio
 
 from fastapi import UploadFile
-from _internal import *
+from ._internal import *
 
 
 async def feast_init(workspace_id: int) -> str:
@@ -13,8 +13,8 @@ async def feast_init(workspace_id: int) -> str:
         :return: Directory name for the created Feature Store
     """
     await make_feast_dirs(workspace_id)
-    ws_name = make_feast_init_files(workspace_id)
-    return ws_name
+    repo_path = await make_feast_init_files(workspace_id)
+    return repo_path
 
 
 async def feast_save_parquet_file(
@@ -32,6 +32,8 @@ async def feast_save_parquet_file(
 
         :param workspace_id: ID of the workspace used by ABACUS
         :param project_id: ID of the project used by ABACUS
+        :param dataset_id: ID of the dataset used by ABACUS
+        :param parquet_file:
         :param dataset_features:
         :param timestamp_col:
         :param entity_name:

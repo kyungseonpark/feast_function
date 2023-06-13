@@ -1,16 +1,17 @@
-from feast_api import *
 from api_io import *
-
 from fastapi import FastAPI
+
+from feast_api import *
 
 
 feast = FastAPI(
-    title="Feast",
+    title="ABACUS Feast",
+    version="0.2.0",
     description=f'Feature Store for ABACUS. 🚛\n\n'
                 f'API Docs = https://www.notion.so/aizen-global/Feast-API-API-Scenario-cefb7df9f42e4237b052c696549ba54b'
 )
 
-TAGS = ["Repository", "Dataset", "Server"]
+TAGS = ["Initialization", "Prepare", "Deployment"]
 
 
 @feast.on_event("startup")
@@ -23,14 +24,14 @@ async def startup_event():
 
 
 @feast.post("/init/", tags=[TAGS[0]])
-async def post_feast_init(api_body: FeastInitInput):
+async def post_feast_init(api_body: FeastInitInput) -> FeastInitOutput:
     """
     **POST**, init the project feast-repo.
     Recommend when the first dataset is saved in the abacus-project.\n\n
 
     - **workspace_id**: ID of the workspace used by ABACUS
     """
-    repo_path = feast_init(api_body.workspace_id)
+    repo_path = await feast_init(api_body.workspace_id)
     return FeastInitOutput(
         repo_path=repo_path,
     )
@@ -42,6 +43,7 @@ async def post_feast_save_and_apply(api_body: TransferDatasetInput):
     **POST**, API that apply feature-view after sending dataset.\n\n
     }
     """
+    print(api_body.dataset_features)
     await feast_save_parquet_file(**api_body.dict()),
     repo_path = await feast_apply(**api_body.dict())
     return TransferDatasetOutPut(repo_path=repo_path)

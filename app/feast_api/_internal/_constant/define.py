@@ -1,7 +1,8 @@
-from .feast_define_templete import *
-from feast_api._internal._constant.feast_template import render_j2_template
+from .define_template import *
+from .jinja import render_j2_template
 
-def get_define_entity_contents(project_id: str, entity_name: str, entity_type: str):
+
+def get_define_entity_contents(project_id: int, entity_name: str, entity_type: str):
     return render_j2_template(template_name=DEFINE_ENTITY_TEMPLATE, project_id=project_id, entity_name=entity_name,
                               entity_type=entity_type)
 
