@@ -25,6 +25,16 @@ class FeastInitOutput(BaseModel):
     repo_path: str
 
 
+class FeastDatasetPathInput(BaseModel):
+    workspace_id: int = WorkspaceID
+    project_id: int = ProjectID
+    dataset_id: int = DatasetID
+
+
+class FeastDatasetPathOutput(BaseModel):
+    dataset_path: str
+
+
 class TransferDatasetInput(BaseModel):
     """
     API Body input values for Input Dataset into Feast.
@@ -42,7 +52,6 @@ class TransferDatasetInput(BaseModel):
     workspace_id: int = WorkspaceID
     project_id: int = ProjectID
     dataset_id: int = DatasetID
-    dataset: UploadFile
     dataset_features: dict[str, str]
     timestamp_col: str
     entity_name: str

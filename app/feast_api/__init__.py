@@ -1,4 +1,5 @@
 from .function import feast_init
+from .function import feast_dataset_path
 from .function import feast_save_parquet_file
 from .function import feast_apply
 from .function import feast_delete_project

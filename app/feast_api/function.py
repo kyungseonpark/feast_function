@@ -17,6 +17,10 @@ async def feast_init(workspace_id: int) -> str:
     return repo_path
 
 
+def feast_dataset_path(workspace_id: int, project_id: int, dataset_id: int):
+    return make_feast_dataset_path(workspace_id, project_id, dataset_id)
+
+
 async def feast_save_parquet_file(
         workspace_id: int,
         project_id: int,

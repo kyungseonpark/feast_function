@@ -61,10 +61,14 @@ async def make_feast_init_files(workspace_id: int):
     )
     write_init_files_tasks.append(__write_yaml_contents(ws_config_file, feast_yaml))
 
-    asyncio.gather(*write_init_files_tasks)
+    await asyncio.gather(*write_init_files_tasks)
 
     repo_path = get_ws_feast_path(workspace_id)
     return repo_path
+
+
+def make_feast_dataset_path(workspace_id: int, project_id: int, dataset_id: int):
+    return get_base_parquet_path(workspace_id, project_id, dataset_id)
 
 
 def __is_parquet(filename: str):
@@ -178,14 +182,14 @@ async def __write_base_fv_file(workspace_id: int, project_id: int, dataset_featu
     feature_list = make_features_list(dataset_features)
     contents = get_define_feature_view_contents(project_id, feature_list)
     if not os.path.exists(base_fv):
-        __write_file_contents(base_fv, contents)
+        await __write_file_contents(base_fv, contents)
 
 
 async def __write_base_source_file(workspace_id: int, project_id: int, timestamp_col: str):
     base_source = get_base_source_path(workspace_id, project_id)
     contents = get_define_file_source_contents(workspace_id, project_id, timestamp_col)
     if not os.path.exists(base_source):
-        __write_file_contents(base_source, contents)
+        await __write_file_contents(base_source, contents)
 
 
 async def __write_base_entity_file(workspace_id: int, project_id: int, entity_name: str, entity_dtype: str):
@@ -193,7 +197,7 @@ async def __write_base_entity_file(workspace_id: int, project_id: int, entity_na
     entity_type = __mapping_feast_type(entity_dtype, ENTITY_DTYPE)
     contents = get_define_entity_contents(project_id, entity_name, entity_type)
     if not os.path.exists(base_entity):
-        __write_file_contents(base_entity, contents)
+        await __write_file_contents(base_entity, contents)
 
 
 async def write_base_file(

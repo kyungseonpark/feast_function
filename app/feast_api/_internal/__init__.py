@@ -1,6 +1,7 @@
 from .directory import make_feast_dirs
 from .directory import delete_project
 from .file import make_feast_init_files
+from .file import make_feast_dataset_path
 from .file import save_parquet_file
 from .file import perform_apply
 from .file import delete_dataset

@@ -1,5 +1,0 @@
-en_val1 = Entity(
-    name="entity1",
-    value_type=ValueType.STRING
-)
-

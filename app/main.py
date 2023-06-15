@@ -37,7 +37,17 @@ async def post_feast_init(api_body: FeastInitInput) -> FeastInitOutput:
     )
 
 
-@feast.post("/transfer_and_apply/", tags=[TAGS[1]])
+@feast.get("/dataset_path/", tags=[TAGS[1]])
+async def get_feast_dataset_path(api_body: FeastDatasetPathInput):
+    """
+    **POST**, API that apply feature-view after sending dataset.\n\n
+    }
+    """
+    dataset_path = feast_dataset_path(**api_body.dict())
+    return FeastDatasetPathOutput(dataset_path=dataset_path)
+
+
+@feast.post("/add_dataset/", tags=[TAGS[1]])
 async def post_feast_save_and_apply(api_body: TransferDatasetInput):
     """
     **POST**, API that apply feature-view after sending dataset.\n\n
@@ -47,6 +57,18 @@ async def post_feast_save_and_apply(api_body: TransferDatasetInput):
     await feast_save_parquet_file(**api_body.dict()),
     repo_path = await feast_apply(**api_body.dict())
     return TransferDatasetOutPut(repo_path=repo_path)
+
+
+# @feast.post("/transfer_and_apply/", tags=[TAGS[1]])
+# async def post_feast_save_and_apply(api_body: TransferDatasetInput):
+#     """
+#     **POST**, API that apply feature-view after sending dataset.\n\n
+#     }
+#     """
+#     print(api_body.dataset_features)
+#     await feast_save_parquet_file(**api_body.dict()),
+#     repo_path = await feast_apply(**api_body.dict())
+#     return TransferDatasetOutPut(repo_path=repo_path)
 
 
 @feast.delete("/delete_dataset/", tags=[TAGS[1]])

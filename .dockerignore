@@ -1,0 +1,7 @@
+# Docker 이미지 빌드 시 포함하지 않을 파일/디렉토리 목록
+.dockerignore
+.pytest_cache
+.pytest_cache/
+__pycache__
+__pycache__/
+.venv   # .venv 디렉토리 추가

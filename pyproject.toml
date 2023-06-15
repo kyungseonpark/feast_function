@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "abacus-feast"
+version = "0.1.0"
+description = ""
+authors = ["kyungseonpark <kyungseon.park@aizen.co>"]
+readme = "README.md"
+packages = [{include = "abacus_feast"}]
+
+[tool.poetry.dependencies]
+python = "3.11.3"
+requests = "^2.31.0"
+feast = "0.31.1"
+fastapi = "0.96"
+pandas = "^1.5.3"
+
+[build-system]
+requires = ["poetry-core>=1.1.0"]
+build-backend = "poetry.core.masonry.api"

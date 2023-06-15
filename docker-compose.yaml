@@ -7,6 +7,7 @@ services:
       dockerfile: Dockerfile-feast
     ports:
       - "${FEAST_PORT}:22124"
+    command: "uvicorn main:feast --host 0.0.0.0 --port 22124 --app-dir /app --reload"
     environment:
       TZ: ${TZ}
       FEAST_HOME: /feast_repo
